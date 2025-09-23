@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: fabric-keyvault-openai-secrets
+metadata:
+  template: fabric-keyvault-openai-secrets@0.0.1-beta
+summary: Deploy Azure KeyVault and OpenAI for Microsoft Fabric Workspace Identity
+description: |
+  This template deploys an Azure KeyVault configured for Microsoft Fabric Workspace Identity access,
+  along with an Azure OpenAI account. The OpenAI endpoint and API key are automatically stored
+  as secrets in the KeyVault for secure access from Fabric notebooks.
+
+# Main infrastructure deployment
+infra:
+  provider: bicep
+  path: ./infra
+
+# No services (this is infrastructure-only)
+services: {}
