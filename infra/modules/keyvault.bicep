@@ -10,10 +10,14 @@ param principalId string
 @description('Object ID of the Fabric Workspace Service Principal')
 param fabricWorkspaceObjectId string
 
+@description('Tags to apply to the resource')
+param resourceTags object
+
 // KeyVault resource
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: name
   location: location
+  tags: resourceTags
   properties: {
     sku: {
       family: 'A'
@@ -23,7 +27,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     enableRbacAuthorization: false
     enableSoftDelete: true
     softDeleteRetentionInDays: 7
-    accessPolicies: [
+    accessPolicies: concat([
       // Access for the user deploying the template
       {
         tenantId: subscription().tenantId
@@ -69,7 +73,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
           ]
         }
       }
-      // Access for the Fabric Workspace Service Principal
+    ], !empty(fabricWorkspaceObjectId) ? [
+      // Access for the Fabric Workspace Service Principal (only if provided)
       {
         tenantId: subscription().tenantId
         objectId: fabricWorkspaceObjectId
@@ -80,7 +85,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
           ]
         }
       }
-    ]
+    ] : [])
   }
 }
 

@@ -10,11 +10,18 @@ param sku string
 @description('Principal ID of the user deploying the template')
 param principalId string
 
+@description('Object ID of the Fabric Workspace Service Principal')
+param fabricWorkspaceObjectId string
+
+@description('Tags to apply to the resource')
+param resourceTags object
+
 // OpenAI Cognitive Services account
 resource openAIAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   name: name
   location: location
   kind: 'OpenAI'
+  tags: resourceTags
   properties: {
     customSubDomainName: name
     publicNetworkAccess: 'Enabled'
@@ -36,42 +43,53 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
-// GPT-4 deployment (most commonly used model)
-resource gpt4Deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
-  parent: openAIAccount
-  name: 'gpt-4'
+// Role assignment to give the Fabric Workspace Service Principal Cognitive Services OpenAI User role (only if workspace object ID is provided)
+resource fabricWorkspaceRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(fabricWorkspaceObjectId)) {
+  name: guid(openAIAccount.id, fabricWorkspaceObjectId, 'Cognitive Services OpenAI User')
+  scope: openAIAccount
   properties: {
-    model: {
-      format: 'OpenAI'
-      name: 'gpt-4'
-      version: '0613'
-    }
-    raiPolicyName: 'Microsoft.Default'
-  }
-  sku: {
-    name: 'Standard'
-    capacity: 10
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd') // Cognitive Services OpenAI User
+    principalId: fabricWorkspaceObjectId
+    principalType: 'ServicePrincipal'
   }
 }
 
-// GPT-3.5 Turbo deployment (cost-effective option)
-resource gpt35Deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
+// GPT deployment
+resource gptDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
   parent: openAIAccount
-  name: 'gpt-35-turbo'
+  name: 'gpt-4.1'
   properties: {
     model: {
       format: 'OpenAI'
-      name: 'gpt-35-turbo'
-      version: '0613'
+      name: 'gpt-4.1'
+      version: '2025-04-14'
+    }
+    raiPolicyName: 'Microsoft.Default'
+  }
+  sku: {
+    name: 'GlobalStandard'
+    capacity: 100
+  }
+}
+
+// Embedding deployment
+resource embeddingsDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
+  parent: openAIAccount
+  name: 'text-embedding-3-large'
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'text-embedding-3-large'
+      version: '1'
     }
     raiPolicyName: 'Microsoft.Default'
   }
   sku: {
     name: 'Standard'
-    capacity: 120
+    capacity: 90
   }
   dependsOn: [
-    gpt4Deployment
+    gptDeployment
   ]
 }
 
@@ -79,4 +97,6 @@ resource gpt35Deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-
 output name string = openAIAccount.name
 output id string = openAIAccount.id
 output endpoint string = openAIAccount.properties.endpoint
+output gptModelName string = gptDeployment.name
+output embeddingModelName string = embeddingsDeployment.name
 // Note: API key is retrieved securely within the secrets module

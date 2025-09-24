@@ -16,3 +16,67 @@ infra:
 
 # No services (this is infrastructure-only)
 services: {}
+
+hooks:
+  preprovision:
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host "Setting user UPN for tagging..."
+        $userUpn = az account show --query user.name -o tsv
+        azd env set AZURE_USER_UPN "$userUpn"
+        Write-Host "Set AZURE_USER_UPN to: $userUpn"
+        
+        Write-Host "Setting user principal ID for access policies..."
+        $principalId = az ad signed-in-user show --query id -o tsv
+        azd env set AZURE_PRINCIPAL_ID "$principalId"
+        Write-Host "Set AZURE_PRINCIPAL_ID to: $principalId"
+        
+        Write-Host ""
+        Write-Host "Fabric Workspace Setup (optional):"
+        $workspaceName = Read-Host "Enter Fabric workspace name (or press Enter to skip)"
+        
+        if (![string]::IsNullOrWhiteSpace($workspaceName)) {
+          Write-Host "Looking up Enterprise Application for workspace: $workspaceName"
+          $objectId = az ad sp list --display-name "$workspaceName" --query "[0].id" -o tsv
+          
+          if (![string]::IsNullOrWhiteSpace($objectId) -and $objectId -ne "null") {
+            azd env set FABRIC_WORKSPACE_OBJECT_ID $objectId
+            Write-Host "✓ Found and set FABRIC_WORKSPACE_OBJECT_ID to: $objectId"
+          } else {
+            Write-Host "⚠️  Could not find Enterprise Application for workspace: $workspaceName"
+            Write-Host "   You can set it manually later with: azd env set FABRIC_WORKSPACE_OBJECT_ID <object-id>"
+          }
+        } else {
+          Write-Host "Skipping Fabric workspace setup"
+        }
+      interactive: true
+      continueOnError: false
+    posix:
+      shell: sh
+      run: |
+        echo "Setting user UPN for tagging..."
+        userUpn=$(az account show --query user.name -o tsv)
+        azd env set AZURE_USER_UPN "$userUpn"
+        echo "Set AZURE_USER_UPN to: $userUpn"
+        
+        echo ""
+        echo "Fabric Workspace Setup (optional):"
+        read -p "Enter Fabric workspace name (or press Enter to skip): " workspaceName
+        
+        if [ ! -z "$workspaceName" ]; then
+          echo "Looking up Enterprise Application for workspace: $workspaceName"
+          objectId=$(az ad sp list --display-name "$workspaceName" --query "[0].id" -o tsv)
+          
+          if [ ! -z "$objectId" ] && [ "$objectId" != "null" ]; then
+            azd env set FABRIC_WORKSPACE_OBJECT_ID "$objectId"
+            echo "✓ Found and set FABRIC_WORKSPACE_OBJECT_ID to: $objectId"
+          else
+            echo "⚠️  Could not find Enterprise Application for workspace: $workspaceName"
+            echo "   You can set it manually later with: azd env set FABRIC_WORKSPACE_OBJECT_ID <object-id>"
+          fi
+        else
+          echo "Skipping Fabric workspace setup"
+        fi
+      interactive: true
+      continueOnError: false
