@@ -16,6 +16,9 @@
     },
     "principalId": {
       "value": "${AZURE_PRINCIPAL_ID}"
+    },
+    "userUpn": {
+      "value": "${AZURE_USER_UPN}"
     }
   }
 }
