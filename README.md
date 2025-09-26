@@ -7,7 +7,7 @@ This repository deploys an Azure KeyVault via [Azure Developer CLI (azd)](https:
 ## Features
 
 - 🔐 **Azure KeyVault** with proper access policies for Fabric Workspace Identity
-- 🤖 **Azure OpenAI** with GPT-4.1 and Text-Embedding-3-Large model deployments  
+- 🤖 **Azure OpenAI** with GPT-4.1-mini and Text-Embedding-3-Large model deployments  
 - 🔑 **Automatic secret storage** of OpenAI endpoint and API key in KeyVault
 - 🏷️ **Resource tagging** with owner, environment, and workspace information
 - 🔒 **Role-based access** for Fabric workspace to OpenAI
@@ -49,7 +49,7 @@ The deployment will:
 - Look up your Fabric workspace Service Principal (if workspace name provided)
 - Create tagged resources with owner and workspace information
 - Deploy Azure KeyVault with proper access policies
-- Deploy Azure OpenAI with latest GPT-4.1 and Text-Embedding-3-Large models
+- Deploy Azure OpenAI with latest GPT-4.1-mini and Text-Embedding-3-Large models
 - Configure role-based access for your Fabric workspace
 - Store OpenAI secrets in KeyVault
 
@@ -65,16 +65,21 @@ az deployment sub show --name "<your-deployment-name>" --query "properties.outpu
 
 The deployment provides these ready-to-use values:
 
-#### These three are what you need to authenticate Azure OpenAI in a Fabric Notebook
+#### Primary deployment outputs you'll use in Fabric Notebooks
 
 - **`KEYVAULT_URI`**: KeyVault endpoint (e.g., `"https://kv-my-keyvault.vault.azure.net/"`)
-- **`KEYVAULT_OPENAI_ENDPOINT_SECRET_NAME`**: Secret name for OpenAI endpoint (e.g., `"openai-endpoint"`)
-- **`KEYVAULT_OPENAI_API_KEY_SECRET_NAME`**: Secret name for API key (e.g., `"openai-api-key"`)
+- **`KEYVAULT_OPENAI_ENDPOINT`**: Secret name for OpenAI endpoint (e.g., `"openai-endpoint"`)
+- **`KEYVAULT_OPENAI_API_KEY`**: Secret name for API key (e.g., `"openai-api-key"`)
+- **`OPENAI_GPT_MODEL`**: GPT model deployment name (e.g., `"gpt-4.1-mini"`)
+- **`OPENAI_EMBEDDING_MODEL`**: Embedding model name (e.g., `"text-embedding-3-large"`)
+
+#### Additional outputs for reference
 
 - **`KEYVAULT_NAME`**: KeyVault name (e.g., `"kv-my-keyvault"`)
 - **`OPENAI_NAME`**: OpenAI service name (e.g., `"cog-myopenaiaccount"`)
-- **`OPENAI_GPT_MODEL_NAME`**: GPT model deployment name (e.g., `"gpt-4.1"`)
-- **`OPENAI_EMBEDDING_MODEL_NAME`**: Embedding model name (e.g., `"text-embedding-3-large"`)
+- **`LOCATION`**: Deployment region
+- **`TENANT_ID`**: Azure tenant ID
+- **`RESOURCE_GROUP`**: Resource group name
 
 ### 🚀 Copy-Paste Ready Notebook Code
 
@@ -92,14 +97,15 @@ from openai.lib.azure import AsyncAzureOpenAI
 
 # Variables, copy these directly from azd output in the terminal
 KEYVAULT_URI="https://kv-my-keyvault.vault.azure.net/"
-KEYVAULT_OPENAI_ENDPOINT_SECRET_NAME="openai-endpoint"
-KEYVAULT_OPENAI_API_KEY_SECRET_NAME="openai-api-key"
+KEYVAULT_OPENAI_ENDPOINT="openai-endpoint"
+KEYVAULT_OPENAI_API_KEY="openai-api-key"
+OPENAI_GPT_MODEL="gpt-4.1-mini"
+OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
 
-OPENAI_ENDPOINT=mssparkutils.credentials.getSecret(KEYVAULT_URI, KEYVAULT_OPENAI_ENDPOINT_SECRET_NAME)
-OPENAI_KEY=mssparkutils.credentials.getSecret(KEYVAULT_URI, KEYVAULT_OPENAI_API_KEY_SECRET_NAME)
+OPENAI_ENDPOINT=mssparkutils.credentials.getSecret(KEYVAULT_URI, KEYVAULT_OPENAI_ENDPOINT)
+OPENAI_KEY=mssparkutils.credentials.getSecret(KEYVAULT_URI, KEYVAULT_OPENAI_API_KEY)
 OPENAI_API_VERSION="2024-12-01-preview"
 OPENAI_EMBEDDING_DIMENSIONS=512
-OPENAI_EMBEDDING_MODEL_DEPLOYMENT="text-embedding-3-large"
 
 
 # Initialize Azure OpenAI client using keys from KeyVault
@@ -114,8 +120,8 @@ async def generate_embeddings(text):
     
     response = await OPENAI_CLIENT.embeddings.create(
         input = text, 
-        dimensions = OPENAI_EMBEDDING_DIMENSIONS,
-        model = OPENAI_EMBEDDING_MODEL_DEPLOYMENT)
+        model = OPENAI_EMBEDDING_MODEL,
+        dimensions = OPENAI_EMBEDDING_DIMENSIONS)
     
     embeddings = response.model_dump()
     return embeddings['data'][0]['embedding']
@@ -137,7 +143,7 @@ print(embeddings)
 
 The template deploys the latest OpenAI models:
 
-- **GPT-4.1**: Latest conversational AI model with 1M token context for chat and text generation
+- **GPT-4.1-mini**: Latest conversational AI model optimized for speed and efficiency
 - **Text-Embedding-3-Large**: Advanced embeddings model for semantic search and similarity
 
 ## Resource Tagging
@@ -153,7 +159,7 @@ These tags help with resource management, cost tracking, and governance.
 
 ## Outputs
 
-After successful deployment, the Bicep template outputs all the configuration values you need for your Fabric Notebooks. These values are displayed in the terminal and can be retrieved anytime using Azure CLI.
+After successful deployment, the Bicep template outputs all the configuration values you need for your Fabric Notebooks. These values are automatically displayed in the terminal after deployment completes, and can be retrieved anytime using Azure CLI or the included PowerShell script.
 
 ### 🎯 How to Use the Output Values
 
@@ -163,21 +169,44 @@ After successful deployment, the Bicep template outputs all the configuration va
 
 ### 📋 Complete List of Outputs
 
-- **`AZURE_LOCATION`**: Azure region where resources are deployed
-- **`AZURE_TENANT_ID`**: Your Azure tenant ID
-- **`AZURE_RESOURCE_GROUP`**: Name of the created resource group
-- **`KEYVAULT_NAME`**: Name of the created KeyVault (use in notebook code)
+#### Core outputs (displayed after deployment)
+
 - **`KEYVAULT_URI`**: URI for accessing the KeyVault
-- **`KEYVAULT_OPENAI_ENDPOINT_SECRET_NAME`**: Secret name containing OpenAI endpoint
-- **`KEYVAULT_OPENAI_API_KEY_SECRET_NAME`**: Secret name containing OpenAI API key
-- **`OPENAI_NAME`**: Name of the OpenAI service (use in notebook code)
-- **`OPENAI_GPT_MODEL_NAME`**: GPT model deployment name (use in notebook code)  
-- **`OPENAI_EMBEDDING_MODEL_NAME`**: Embedding model deployment name (use in notebook code)
-- **`msg`**: Custom message reminder to copy values into Fabric Notebook
+- **`KEYVAULT_OPENAI_ENDPOINT`**: Secret name containing OpenAI endpoint
+- **`KEYVAULT_OPENAI_API_KEY`**: Secret name containing OpenAI API key
+- **`OPENAI_GPT_MODEL`**: GPT model deployment name
+- **`OPENAI_EMBEDDING_MODEL`**: Embedding model deployment name
+
+#### Additional outputs
+
+- **`KEYVAULT_NAME`**: Name of the created KeyVault
+- **`OPENAI_NAME`**: Name of the OpenAI service
+- **`LOCATION`**: Azure region where resources are deployed
+- **`TENANT_ID`**: Your Azure tenant ID
+- **`RESOURCE_GROUP`**: Name of the created resource group
 
 ### 🔍 Retrieving Output Values Anytime
 
-You can view your deployment outputs anytime using:
+You can view your deployment outputs anytime using several methods:
+
+#### Using the included PowerShell script (Recommended)
+
+```bash
+# Display the 5 key outputs in a clean format
+./scripts/show-outputs.ps1
+```
+
+#### Using azd environment values
+
+```bash
+# Show all environment variables
+azd env get-values
+
+# Show only the key outputs
+azd env get-values | Select-String "KEYVAULT_URI|KEYVAULT_OPENAI_ENDPOINT|KEYVAULT_OPENAI_API_KEY|OPENAI_GPT_MODEL|OPENAI_EMBEDDING_MODEL"
+```
+
+#### Using Azure CLI
 
 ```bash
 # List recent deployments to find your deployment name
@@ -214,9 +243,9 @@ azd down
 
 **OpenAI models not available:**
 
-- GPT-4.1 and Text-Embedding-3-Large may not be available in all regions
+- GPT-4.1-mini and Text-Embedding-3-Large may not be available in all regions
 - Check Azure OpenAI model availability in your chosen region
-- Consider updating the model versions in `infra/modules/openai.bicep` if needed
+- You can update the models in `infra/modules/openai.bicep` if needed
 
 **Role assignment failures:**
 

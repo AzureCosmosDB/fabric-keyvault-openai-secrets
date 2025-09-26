@@ -37,15 +37,16 @@ hooks:
         $workspaceName = Read-Host "Enter Fabric workspace name (or press Enter to skip)"
         
         if (![string]::IsNullOrWhiteSpace($workspaceName)) {
+          azd env set AZURE_FABRIC_WORKSPACE_NAME "$workspaceName"
           Write-Host "Looking up Enterprise Application for workspace: $workspaceName"
           $objectId = az ad sp list --display-name "$workspaceName" --query "[0].id" -o tsv
           
           if (![string]::IsNullOrWhiteSpace($objectId) -and $objectId -ne "null") {
-            azd env set FABRIC_WORKSPACE_OBJECT_ID $objectId
-            Write-Host "✓ Found and set FABRIC_WORKSPACE_OBJECT_ID to: $objectId"
+            azd env set AZURE_FABRIC_WORKSPACE_OBJECT_ID $objectId
+            Write-Host "✓ Found and set AZURE_FABRIC_WORKSPACE_OBJECT_ID to: $objectId"
           } else {
             Write-Host "⚠️  Could not find Enterprise Application for workspace: $workspaceName"
-            Write-Host "   You can set it manually later with: azd env set FABRIC_WORKSPACE_OBJECT_ID <object-id>"
+            Write-Host "   You can set it manually later with: azd env set AZURE_FABRIC_WORKSPACE_OBJECT_ID <object-id>"
           }
         } else {
           Write-Host "Skipping Fabric workspace setup"
@@ -59,24 +60,77 @@ hooks:
         userUpn=$(az account show --query user.name -o tsv)
         azd env set AZURE_USER_UPN "$userUpn"
         echo "Set AZURE_USER_UPN to: $userUpn"
+
+        echo "Setting user principal ID for access policies..."
+        principalId=$(az ad signed-in-user show --query id -o tsv)
+        azd env set AZURE_PRINCIPAL_ID "$principalId"
+        echo "Set AZURE_PRINCIPAL_ID to: $principalId"
         
         echo ""
         echo "Fabric Workspace Setup (optional):"
         read -p "Enter Fabric workspace name (or press Enter to skip): " workspaceName
         
         if [ ! -z "$workspaceName" ]; then
+          azd env set AZURE_FABRIC_WORKSPACE_NAME "$workspaceName"
           echo "Looking up Enterprise Application for workspace: $workspaceName"
           objectId=$(az ad sp list --display-name "$workspaceName" --query "[0].id" -o tsv)
           
           if [ ! -z "$objectId" ] && [ "$objectId" != "null" ]; then
-            azd env set FABRIC_WORKSPACE_OBJECT_ID "$objectId"
-            echo "✓ Found and set FABRIC_WORKSPACE_OBJECT_ID to: $objectId"
+            azd env set AZURE_FABRIC_WORKSPACE_OBJECT_ID "$objectId"
+            echo "✓ Found and set AZURE_FABRIC_WORKSPACE_OBJECT_ID to: $objectId"
           else
             echo "⚠️  Could not find Enterprise Application for workspace: $workspaceName"
-            echo "   You can set it manually later with: azd env set FABRIC_WORKSPACE_OBJECT_ID <object-id>"
+            echo "   You can set it manually later with: azd env set AZURE_FABRIC_WORKSPACE_OBJECT_ID <object-id>"
           fi
         else
           echo "Skipping Fabric workspace setup"
         fi
       interactive: true
+      continueOnError: false
+  
+  postprovision:
+    windows:
+      shell: pwsh
+      run: |
+        Write-Host ""
+        Write-Host "🚀 Deployment Complete! Key Output Values:" -ForegroundColor Green
+        Write-Host "==========================================" -ForegroundColor Green
+        
+        $envValues = azd env get-values | ConvertFrom-StringData
+        
+        Write-Host "KEYVAULT_URI: " -NoNewline -ForegroundColor Cyan
+        Write-Host $envValues["KEYVAULT_URI"] -ForegroundColor White
+        
+        Write-Host "KEYVAULT_OPENAI_ENDPOINT: " -NoNewline -ForegroundColor Cyan
+        Write-Host $envValues["KEYVAULT_OPENAI_ENDPOINT"] -ForegroundColor White
+        
+        Write-Host "KEYVAULT_OPENAI_API_KEY: " -NoNewline -ForegroundColor Cyan
+        Write-Host $envValues["KEYVAULT_OPENAI_API_KEY"] -ForegroundColor White
+        
+        Write-Host "OPENAI_GPT_MODEL: " -NoNewline -ForegroundColor Cyan
+        Write-Host $envValues["OPENAI_GPT_MODEL"] -ForegroundColor White
+        
+        Write-Host "OPENAI_EMBEDDING_MODEL: " -NoNewline -ForegroundColor Cyan
+        Write-Host $envValues["OPENAI_EMBEDDING_MODEL"] -ForegroundColor White
+      continueOnError: false
+    posix:
+      shell: sh
+      run: |
+        echo ""
+        echo "🚀 Deployment Complete! Key Output Values:"
+        echo "=========================================="
+        
+        envValues=$(azd env get-values)
+        
+        keyvaultUri=$(echo "$envValues" | grep "KEYVAULT_URI" | cut -d'=' -f2 | tr -d '"')
+        keyvaultEndpoint=$(echo "$envValues" | grep "KEYVAULT_OPENAI_ENDPOINT" | cut -d'=' -f2 | tr -d '"')
+        keyvaultApiKey=$(echo "$envValues" | grep "KEYVAULT_OPENAI_API_KEY" | cut -d'=' -f2 | tr -d '"')
+        gptModel=$(echo "$envValues" | grep "OPENAI_GPT_MODEL" | cut -d'=' -f2 | tr -d '"')
+        embeddingModel=$(echo "$envValues" | grep "OPENAI_EMBEDDING_MODEL" | cut -d'=' -f2 | tr -d '"')
+        
+        echo "KEYVAULT_URI: $keyvaultUri"
+        echo "KEYVAULT_OPENAI_ENDPOINT: $keyvaultEndpoint"
+        echo "KEYVAULT_OPENAI_API_KEY: $keyvaultApiKey"
+        echo "OPENAI_GPT_MODEL: $gptModel"
+        echo "OPENAI_EMBEDDING_MODEL: $embeddingModel"
       continueOnError: false
