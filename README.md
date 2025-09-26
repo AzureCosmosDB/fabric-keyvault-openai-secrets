@@ -101,8 +101,10 @@ KEYVAULT_OPENAI_API_KEY="openai-api-key"
 OPENAI_GPT_MODEL="gpt-4.1-mini"
 OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
 
+# Get the actual OpenAI endpoint and key
 OPENAI_ENDPOINT=mssparkutils.credentials.getSecret(KEYVAULT_URI, KEYVAULT_OPENAI_ENDPOINT)
 OPENAI_KEY=mssparkutils.credentials.getSecret(KEYVAULT_URI, KEYVAULT_OPENAI_API_KEY)
+
 OPENAI_API_VERSION="2024-12-01-preview"
 OPENAI_EMBEDDING_DIMENSIONS=512
 

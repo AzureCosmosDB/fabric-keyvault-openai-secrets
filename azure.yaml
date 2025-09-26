@@ -140,19 +140,19 @@ hooks:
         }
 
         Write-Host "KEYVAULT_URI=" -NoNewline -ForegroundColor Cyan
-        Write-Host $envValues["KEYVAULT_URI"] -ForegroundColor White
+        Write-Host "`"$($envValues["KEYVAULT_URI"])`"" -ForegroundColor White
 
         Write-Host "KEYVAULT_OPENAI_ENDPOINT=" -NoNewline -ForegroundColor Cyan
-        Write-Host $envValues["KEYVAULT_OPENAI_ENDPOINT"] -ForegroundColor White
+        Write-Host "`"$($envValues["KEYVAULT_OPENAI_ENDPOINT"])`"" -ForegroundColor White
 
         Write-Host "KEYVAULT_OPENAI_API_KEY=" -NoNewline -ForegroundColor Cyan
-        Write-Host $envValues["KEYVAULT_OPENAI_API_KEY"] -ForegroundColor White
+        Write-Host "`"$($envValues["KEYVAULT_OPENAI_API_KEY"])`"" -ForegroundColor White
 
         Write-Host "OPENAI_GPT_MODEL=" -NoNewline -ForegroundColor Cyan
-        Write-Host $envValues["OPENAI_GPT_MODEL"] -ForegroundColor White
+        Write-Host "`"$($envValues["OPENAI_GPT_MODEL"])`"" -ForegroundColor White
 
         Write-Host "OPENAI_EMBEDDING_MODEL=" -NoNewline -ForegroundColor Cyan
-        Write-Host $envValues["OPENAI_EMBEDDING_MODEL"] -ForegroundColor White
+        Write-Host "`"$($envValues["OPENAI_EMBEDDING_MODEL"])`"" -ForegroundColor White
       interactive: true
       continueOnError: false
     posix:
@@ -170,10 +170,10 @@ hooks:
         gptModel=$(echo "$envValues" | grep "OPENAI_GPT_MODEL" | cut -d'=' -f2 | tr -d '"')
         embeddingModel=$(echo "$envValues" | grep "OPENAI_EMBEDDING_MODEL" | cut -d'=' -f2 | tr -d '"')
         
-        echo "KEYVAULT_URI=$keyvaultUri"
-        echo "KEYVAULT_OPENAI_ENDPOINT=$keyvaultEndpoint"
-        echo "KEYVAULT_OPENAI_API_KEY=$keyvaultApiKey"
-        echo "OPENAI_GPT_MODEL=$gptModel"
-        echo "OPENAI_EMBEDDING_MODEL=$embeddingModel"
+        echo "KEYVAULT_URI=\"$keyvaultUri\""
+        echo "KEYVAULT_OPENAI_ENDPOINT=\"$keyvaultEndpoint\""
+        echo "KEYVAULT_OPENAI_API_KEY=\"$keyvaultApiKey\""
+        echo "OPENAI_GPT_MODEL=\"$gptModel\""
+        echo "OPENAI_EMBEDDING_MODEL=\"$embeddingModel\""
       interactive: true
       continueOnError: false
