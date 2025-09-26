@@ -57,11 +57,11 @@ resource fabricWorkspaceRoleAssignment 'Microsoft.Authorization/roleAssignments@
 // GPT deployment
 resource gptDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
   parent: openAIAccount
-  name: 'gpt-4.1'
+  name: 'gpt-4.1-mini'
   properties: {
     model: {
       format: 'OpenAI'
-      name: 'gpt-4.1'
+      name: 'gpt-4.1-mini'
       version: '2025-04-14'
     }
     raiPolicyName: 'Microsoft.Default'

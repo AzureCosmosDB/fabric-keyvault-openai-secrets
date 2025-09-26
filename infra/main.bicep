@@ -68,11 +68,12 @@ module resources './resources.bicep' = {
 
 // Outputs
 output KEYVAULT_URI string = resources.outputs.KEYVAULT_URI
-output KEYVAULT_OPENAI_ENDPOINT_SECRET_NAME string = resources.outputs.KEYVAULT_OPENAI_ENDPOINT_SECRET_NAME
-output KEYVAULT_OPENAI_API_KEY_SECRET_NAME string = resources.outputs.KEYVAULT_OPENAI_API_KEY_SECRET_NAME
+output KEYVAULT_OPENAI_ENDPOINT string = resources.outputs.KEYVAULT_OPENAI_ENDPOINT
+output KEYVAULT_OPENAI_API_KEY string = resources.outputs.KEYVAULT_OPENAI_API_KEY
+output OPENAI_GPT_MODEL string = resources.outputs.OPENAI_GPT_MODEL
+output OPENAI_EMBEDDING_MODEL string = resources.outputs.OPENAI_EMBEDDING_MODEL
+
 output OPENAI_NAME string = resources.outputs.OPENAI_NAME
-output OPENAI_GPT_MODEL_NAME string = resources.outputs.OPENAI_GPT_MODEL_NAME
-output OPENAI_EMBEDDING_MODEL_NAME string = resources.outputs.OPENAI_EMBEDDING_MODEL_NAME
 output KEYVAULT_NAME string = resources.outputs.KEYVAULT_NAME
 output LOCATION string = location
 output TENANT_ID string = tenant().tenantId
