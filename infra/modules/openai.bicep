@@ -68,7 +68,7 @@ resource gptDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05
   }
   sku: {
     name: 'GlobalStandard'
-    capacity: 100
+    capacity: 5
   }
 }
 
@@ -85,8 +85,8 @@ resource embeddingsDeployment 'Microsoft.CognitiveServices/accounts/deployments@
     raiPolicyName: 'Microsoft.Default'
   }
   sku: {
-    name: 'Standard'
-    capacity: 90
+    name: 'GlobalStandard'
+    capacity: 10
   }
   dependsOn: [
     gptDeployment

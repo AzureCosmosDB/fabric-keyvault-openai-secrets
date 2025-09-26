@@ -1,6 +1,6 @@
 # Store Azure OpenAI Secrets in KeyVault for Microsoft Fabric Notebooks
 
-Microsoft Fabric Notebooks does not support Entra ID authentication to Azure OpenAI resources within a Fabric Notebook. Users must use key-based authentication. To do so securely, Azure OpenAI keys must be stored in Azure KeyVault and accessed using the Service Principal for the Fabric Workspace Identity.
+Microsoft Fabric does not support Entra ID authentication to Azure OpenAI resources within a Fabric Notebook. Users must use key-based authentication. To do so securely, Azure OpenAI keys must be stored in Azure KeyVault and accessed using the Service Principal for the current user. Eventually this will include the Fabric Workspace Identity.
 
 This repository deploys an Azure KeyVault via [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/) for use with Microsoft Fabric Notebooks and Workspace Identity. The template creates an Azure OpenAI account with the latest models and stores its secrets in the KeyVault for secure access from Fabric Notebooks.
 
@@ -10,7 +10,7 @@ This repository deploys an Azure KeyVault via [Azure Developer CLI (azd)](https:
 - 🤖 **Azure OpenAI** with GPT-4.1-mini and Text-Embedding-3-Large model deployments  
 - 🔑 **Automatic secret storage** of OpenAI endpoint and API key in KeyVault
 - 🏷️ **Resource tagging** with owner, environment, and workspace information
-- 🔒 **Role-based access** for Fabric workspace to OpenAI
+- 🔒 **Role-based access** for User and Fabric workspace to OpenAI
 - 🔍 **Automatic workspace discovery** during deployment
 - 🚀 **One-command deployment** using Azure Developer CLI
 - 📋 **Pre-configured access policies** for seamless Fabric integration
@@ -20,46 +20,45 @@ This repository deploys an Azure KeyVault via [Azure Developer CLI (azd)](https:
 1. [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 2. [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
 3. An Azure subscription with permissions to create resources (e.g. Subscription OWNER)
-4. A Microsoft Fabric workspace
+4. A Microsoft Fabric workspace **with Workspace Identity enabled**
 
 ## Quick Start
 
-### 1. Clone and Initialize
+### 1. Initialize the Project
 
 ```bash
-azd init --template AzureCosmosDB/fabric-keyvault-openai-secrets
-cd fabric-keyvault-openai-secrets
+azd init .
 ```
 
-### 2. Deploy with Interactive Setup
+When prompted:
+
+- **Enter a new environment name** (e.g., `my-fabric-kv`) - This will be used as your resource group name after "rg-" prefix
+
+### 2. Deploy Infrastructure
 
 ```bash
-azd up
+azd provision
 ```
 
 During deployment, you'll be prompted to:
 
-- **Enter your Fabric workspace name** The deployment will automatically look up the workspace Service Principal
-- **Set your Azure location**: Choose the region for your resources
-- **Configure environment name**: Used for resource naming and tagging
+- **Enter your Fabric workspace name** - The deployment will automatically look up the workspace Service Principal
+- **Choose your Azure location** - Select the region for your resources. Ideally the same region as your Fabric Capacity.
 
 The deployment will:
 
-- Automatically discover your user information for resource tagging
-- Look up your Fabric workspace Service Principal (if workspace name provided)
-- Create tagged resources with owner and workspace information
+- Automatically discover your user information for resource tagging  
+- Look up your Fabric workspace Service Principal
+- Create a resource group named "rg-{your-environment-name}"
+- Deploy KeyVault and OpenAI resources with proper access policies
 - Deploy Azure KeyVault with proper access policies
 - Deploy Azure OpenAI with latest GPT-4.1-mini and Text-Embedding-3-Large models
-- Configure role-based access for your Fabric workspace
+- Configure role-based access for you and your Fabric workspace
 - Store OpenAI secrets in KeyVault
 
 ## Using Deployment Outputs in Microsoft Fabric Notebooks
 
-After deployment, your Bicep template outputs all the configuration values you need to connect to Azure OpenAI from your Fabric Notebooks. These outputs appear in the deployment results and can be retrieved anytime using:
-
-```bash
-az deployment sub show --name "<your-deployment-name>" --query "properties.outputs" --output json
-```
+After deployment, your template outputs all the configuration values you need to connect to Azure OpenAI from your Fabric Notebooks. These outputs are displayed automatically at the end of deployment. If you need to see them again, simply run `azd provision` - it will skip deployment and show the output values.
 
 ### 📋 Available Output Values
 
@@ -132,7 +131,26 @@ embeddings = await generate_embeddings(search_text.strip())
 print(embeddings)
 ```
 
-### 💡 Key Benefits of Using Deployment Outputs
+### � Retrieving Output Values Anytime
+
+To see your deployment output values again:
+
+```bash
+# Run provision again - it will show the outputs without redeploying
+azd provision
+```
+
+You can also view them using:
+
+```bash
+# Show all environment variables
+azd env get-values
+
+# Show only the key outputs
+azd env get-values | Select-String "KEYVAULT_URI|KEYVAULT_OPENAI_ENDPOINT|KEYVAULT_OPENAI_API_KEY|OPENAI_GPT_MODEL|OPENAI_EMBEDDING_MODEL"
+```
+
+### �💡 Key Benefits of Using Deployment Outputs
 
 1. **No Hard-Coding**: Use the exact model deployment names from your infrastructure
 2. **Environment Consistency**: Same code works across dev/test/prod environments
@@ -156,65 +174,6 @@ All deployed resources are automatically tagged with:
 - **ManagedBy**: "azd" (indicates deployment via Azure Developer CLI)
 
 These tags help with resource management, cost tracking, and governance.
-
-## Outputs
-
-After successful deployment, the Bicep template outputs all the configuration values you need for your Fabric Notebooks. These values are automatically displayed in the terminal after deployment completes, and can be retrieved anytime using Azure CLI or the included PowerShell script.
-
-### 🎯 How to Use the Output Values
-
-1. **Copy the output values** from your deployment results
-2. **Replace the configuration variables** in the notebook code examples above
-3. **Run your Fabric Notebook** with the correct resource names and model deployments
-
-### 📋 Complete List of Outputs
-
-#### Core outputs (displayed after deployment)
-
-- **`KEYVAULT_URI`**: URI for accessing the KeyVault
-- **`KEYVAULT_OPENAI_ENDPOINT`**: Secret name containing OpenAI endpoint
-- **`KEYVAULT_OPENAI_API_KEY`**: Secret name containing OpenAI API key
-- **`OPENAI_GPT_MODEL`**: GPT model deployment name
-- **`OPENAI_EMBEDDING_MODEL`**: Embedding model deployment name
-
-#### Additional outputs
-
-- **`KEYVAULT_NAME`**: Name of the created KeyVault
-- **`OPENAI_NAME`**: Name of the OpenAI service
-- **`LOCATION`**: Azure region where resources are deployed
-- **`TENANT_ID`**: Your Azure tenant ID
-- **`RESOURCE_GROUP`**: Name of the created resource group
-
-### 🔍 Retrieving Output Values Anytime
-
-You can view your deployment outputs anytime using several methods:
-
-#### Using the included PowerShell script (Recommended)
-
-```bash
-# Display the 5 key outputs in a clean format
-./scripts/show-outputs.ps1
-```
-
-#### Using azd environment values
-
-```bash
-# Show all environment variables
-azd env get-values
-
-# Show only the key outputs
-azd env get-values | Select-String "KEYVAULT_URI|KEYVAULT_OPENAI_ENDPOINT|KEYVAULT_OPENAI_API_KEY|OPENAI_GPT_MODEL|OPENAI_EMBEDDING_MODEL"
-```
-
-#### Using Azure CLI
-
-```bash
-# List recent deployments to find your deployment name
-az deployment sub list --query "[].{Name:name, State:properties.provisioningState}" --output table
-
-# Get outputs from a specific deployment
-az deployment sub show --name "<your-deployment-name>" --query "properties.outputs" --output json
-```
 
 ## Clean Up
 
